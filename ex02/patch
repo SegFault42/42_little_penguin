@@ -1,0 +1,11 @@
+--- linux/Makefile.orig	2018-04-09 20:41:56.533412508 +0000
++++ linux/Makefile	2018-04-09 19:57:38.083832775 +0000
+@@ -2,7 +2,7 @@
+ VERSION = 4
+ PATCHLEVEL = 16
+ SUBLEVEL = 0
+-EXTRAVERSION =
++EXTRAVERSION = -thor_kernel
+ NAME = Fearless Coyote
+ 
+ # *DOCUMENTATION*
