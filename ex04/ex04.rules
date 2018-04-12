@@ -1,0 +1,2 @@
+ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd[a-z]1", ATTRS{vendor}=="0x106b", RUN+="/home/segfault42/Documents/42_little_penguin/ex04/add.sh"
+ACTION=="remove", SUBSYSTEM=="block", KERNEL=="sd[a-z]1", ENV{ID_MODEL}=="USB_DISK_Pro", RUN+="/home/segfault42/Documents/42_little_penguin/ex04/remove.sh"

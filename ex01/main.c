@@ -7,13 +7,13 @@ MODULE_LICENSE("GPL");
 
 static int	__init print_hello(void)
 {
-	printk(KERN_INFO "Hello world !\n");
+	pr_info("Hello world !\n");
 	return 0;
 }
 
-static void __exit clean_up(void)
+static void	__exit clean_up(void)
 {
-	printk(KERN_INFO "Cleaning up module.\n");
+	pr_info("Cleaning up module.\n");
 }
 
 module_init(print_hello);
