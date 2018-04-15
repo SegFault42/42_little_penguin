@@ -10,32 +10,67 @@ MODULE_AUTHOR("SegFault42 <SegFault42@protonmail.com>");
 MODULE_DESCRIPTION("Misc device module");
 MODULE_LICENSE("GPL");
 
+#define LOGIN "rabougue\n"
+#define LOGIN_LEN 9
+
 static int	misc_open(struct inode *inode, struct file *filp);
 static int	misc_release(struct inode *inode, struct file *filp);
+static ssize_t	misc_read(struct file *filp, char *buffer, size_t length, loff_t *offset);
+static ssize_t	misc_write(struct file *filp, const char *buffer, size_t length, loff_t *offset);
 
+static char			msg_rcv[128] = {0};
 static struct miscdevice	misc_device;
-static struct file_operations f_ops = {
+static struct file_operations	f_ops = {
+	.owner = THIS_MODULE,
 	.open = misc_open,
 	.release = misc_release,
+	.read = misc_read,
+	.write = misc_write,
 };
-static int	incr = 0;
-
 
 static int	misc_open(struct inode *inode, struct file *filp)
 {
-	incr++;
+	pr_info("device opened\n");
 	return 0;
 }
 
 static int	misc_release(struct inode *inode, struct file *filp)
 {
-	incr--;
+	pr_info("device closed\n");
+	return 0;
+}
+
+static ssize_t		misc_read(struct file *filp,
+			char *buffer,
+			size_t length,
+			loff_t *offset)
+{
+	if (*offset == 0 && length > LOGIN_LEN) {
+		if (copy_to_user(buffer, LOGIN, LOGIN_LEN) != 0) {
+			pr_info("copy_to_user() failure");
+			return -1;
+		}
+		*offset = LOGIN_LEN;
+		return LOGIN_LEN;
+	}
+	pr_info("buffer = %s\n", buffer);
+	return 0;
+}
+
+static ssize_t	misc_write(struct file *filp,
+			const char *buffer,
+			size_t length,
+			loff_t *offset)
+{
+	/*sprintf(msg_rcv, "%s", buffer);*/
+	/*pr_info("msg = %s\n", msg_rcv);*/
+	pr_info("nb = %zu\n", length);
 	return 0;
 }
 
 int	create_misc(void)
 {
-	int			retval;
+	int	retval;
 
 	misc_device.minor = MISC_DYNAMIC_MINOR;
 	misc_device.name = "fortytwo";
