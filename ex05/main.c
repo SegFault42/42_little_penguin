@@ -5,6 +5,7 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/uaccess.h>
+#include <linux/string.h>
 
 MODULE_AUTHOR("SegFault42 <SegFault42@protonmail.com>");
 MODULE_DESCRIPTION("Misc device module");
@@ -12,13 +13,14 @@ MODULE_LICENSE("GPL");
 
 #define LOGIN "rabougue\n"
 #define LOGIN_LEN 9
+#define BUFF_SIZE 128
 
 static int	misc_open(struct inode *inode, struct file *filp);
 static int	misc_release(struct inode *inode, struct file *filp);
 static ssize_t	misc_read(struct file *filp, char *buffer, size_t length, loff_t *offset);
 static ssize_t	misc_write(struct file *filp, const char *buffer, size_t length, loff_t *offset);
 
-static char			msg_rcv[128] = {0};
+static char			msg_rcv[BUFF_SIZE] = {0};
 static struct miscdevice	misc_device;
 static struct file_operations	f_ops = {
 	.owner = THIS_MODULE,
@@ -62,10 +64,22 @@ static ssize_t	misc_write(struct file *filp,
 			size_t length,
 			loff_t *offset)
 {
-	/*sprintf(msg_rcv, "%s", buffer);*/
-	/*pr_info("msg = %s\n", msg_rcv);*/
-	pr_info("nb = %zu\n", length);
-	return 0;
+	unsigned long	retval = 0;
+
+	if (length > BUFF_SIZE)
+		return -1;
+	if ((retval = copy_from_user(msg_rcv, buffer, length))) {
+		pr_err("%ld byte(s) can't be copied !\n", retval);
+		return retval;
+	}
+	pr_info("msg = %s\n", msg_rcv);
+	if (strcmp(LOGIN, msg_rcv))
+	{
+		pr_info("Invalid\n");
+		return -EINVAL;
+	}
+	pr_info("Valid\n");
+	return length;
 }
 
 int	create_misc(void)
