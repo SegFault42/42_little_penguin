@@ -11,18 +11,21 @@ MODULE_AUTHOR("SegFault42 <SegFault42@protonmail.com>");
 MODULE_DESCRIPTION("Misc device module");
 MODULE_LICENSE("GPL");
 
-#define LOGIN "rabougue\n"
-#define LOGIN_LEN 9
+#define LOGIN "rabougue"
+#define LOGIN_LEN 8
 #define BUFF_SIZE 128
 
 static int	misc_open(struct inode *inode, struct file *filp);
 static int	misc_release(struct inode *inode, struct file *filp);
-static ssize_t	misc_read(struct file *filp, char *buffer, size_t length, loff_t *offset);
-static ssize_t	misc_write(struct file *filp, const char *buffer, size_t length, loff_t *offset);
+static ssize_t	misc_read(struct file *filp, char *buffer,
+			  size_t length, loff_t *offset);
+static ssize_t	misc_write(struct file *filp, const char *buffer,
+			   size_t length, loff_t *offset);
+static uint8_t	cmp_login(void);
 
 static char			msg_rcv[BUFF_SIZE] = {0};
 static struct miscdevice	misc_device;
-static struct file_operations	f_ops = {
+const struct file_operations	f_ops = {
 	.owner = THIS_MODULE,
 	.open = misc_open,
 	.release = misc_release,
@@ -55,8 +58,18 @@ static ssize_t		misc_read(struct file *filp,
 		*offset = LOGIN_LEN;
 		return LOGIN_LEN;
 	}
-	pr_info("buffer = %s\n", buffer);
+	pr_debug("buffer = %s\n", buffer);
 	return 0;
+}
+
+static uint8_t	cmp_login(void)
+{
+	if (strcmp(LOGIN, msg_rcv)) {
+		pr_info("Invalid\n");
+		return -EINVAL;
+	}
+	pr_info("Valid\n");
+	return 1;
 }
 
 static ssize_t	misc_write(struct file *filp,
@@ -66,23 +79,22 @@ static ssize_t	misc_write(struct file *filp,
 {
 	unsigned long	retval = 0;
 
+	memset(&msg_rcv, 0, BUFF_SIZE);
 	if (length > BUFF_SIZE)
-		return -1;
-	if ((retval = copy_from_user(msg_rcv, buffer, length))) {
+		return -EINVAL;
+	retval = copy_from_user(msg_rcv, buffer, length);
+	if (retval) {
 		pr_err("%ld byte(s) can't be copied !\n", retval);
 		return retval;
 	}
 	pr_info("msg = %s\n", msg_rcv);
-	if (strcmp(LOGIN, msg_rcv))
-	{
-		pr_info("Invalid\n");
+	if (cmp_login() == 1)
+		return length;
+	else
 		return -EINVAL;
-	}
-	pr_info("Valid\n");
-	return length;
 }
 
-int	create_misc(void)
+static int	__init create_misc(void)
 {
 	int	retval;
 
@@ -94,11 +106,12 @@ int	create_misc(void)
 		pr_err("misc_register() failure\n");
 		return retval;
 	}
-	pr_info("New misc device : %s, 10, %i\n", misc_device.name, misc_device.minor);
+	pr_info("New misc device : %s, 10, %i\n", misc_device.name,
+		misc_device.minor);
 	return 0;
 }
 
-static void __exit	clean_up(void)
+static void	__exit clean_up(void)
 {
 	misc_deregister(&misc_device);
 	pr_info("Cleaning up module.\n");

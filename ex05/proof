@@ -1,0 +1,17 @@
+➜  ex05 git:(master) ✗ insmod main.ko
+➜  ex05 git:(master) ✗ cat /dev/fortytwo
+rabougue#                                                                                                                                       ➜  ex05 git:(master) ✗ echo -n "rabougue" > /dev/fortytwo
+➜  ex05 git:(master) ✗ echo -n "rabsdfsdfougue" > /dev/fortytwo
+echo: write error: invalid argument
+➜  ex05 git:(master) ✗ dmesg
+[ 7707.862651] New misc device : fortytwo, 10, 57
+[ 7719.024373] device opened
+[ 7719.024920] device closed
+[ 7723.401581] device opened
+[ 7723.402033] msg = rabougue
+[ 7723.402440] Valid
+[ 7723.402744] device closed
+[ 7728.103872] device opened
+[ 7728.104306] msg = rabsdfsdfougue
+[ 7728.104783] Invalid
+[ 7728.106210] device closed
