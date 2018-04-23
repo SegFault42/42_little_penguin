@@ -6,7 +6,7 @@
 #include <linux/slab.h>
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Louis Solofrizzo <louis@ne02ptzero.me> reviewed by SegFault42");
+MODULE_AUTHOR("Louis Solofrizzo <louis@ne02ptzero.me> corrected by SegFault42");
 MODULE_DESCRIPTION("Useless module");
 
 static ssize_t myfd_read(struct file *fp,
