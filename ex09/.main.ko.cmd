@@ -1,1 +1,0 @@
-cmd_/home/segfault42/Documents/42_little_penguin/ex09/main.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/segfault42/Documents/42_little_penguin/ex09/main.ko /home/segfault42/Documents/42_little_penguin/ex09/main.o /home/segfault42/Documents/42_little_penguin/ex09/main.mod.o ;  true
