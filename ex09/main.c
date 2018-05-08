@@ -9,6 +9,10 @@
 #include <linux/string.h>
 #include <linux/uaccess.h>
 
+MODULE_AUTHOR("SegFault42 <SegFault42@protonmail.com>");
+MODULE_DESCRIPTION("proc module");
+MODULE_LICENSE("GPL");
+
 #define PROCFS_NAME	"mymounts"
 #define BUFF_SIZE	256
 
@@ -26,14 +30,14 @@ static const struct file_operations fops = {
 static ssize_t	read_proc(struct file *filp, char *buf, size_t len, loff_t *offp)
 {
 	struct dentry	*curdentry;
+	char		buff_entry[256] = {0};
 
 	list_for_each_entry(curdentry, &current->fs->root.mnt->mnt_root->d_subdirs, d_child)
 	{
 		if (curdentry->d_flags & DCACHE_MOUNTED) {
 			strcat(buffer, curdentry->d_name.name);
 			strcat(buffer, "\t");
-			strcat(buffer, curdentry->d_sb->s_root->d_name.name);
-			strcat(buffer, curdentry->d_name.name);
+			strcat(buffer, dentry_path_raw(curdentry, buff_entry, 256));
 			strcat(buffer, "\n");
 		}
 	}
