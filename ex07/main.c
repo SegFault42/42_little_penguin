@@ -20,23 +20,21 @@ MODULE_LICENSE("GPL");
 #define BUFF_SIZE 128
 #define LOGIN "rabougue"
 
-static char			msg_rcv[BUFF_SIZE] = {0};
+static char			id_buf[BUFF_SIZE] = {0};
 static char			jiffies_buf[BUFF_SIZE] = {0};
+static char			foo_buf[PAGE_SIZE] = {0};
 
 static int	create_dir(void);
-/*static void	create_file_id(void);*/
-/*static void	create_file_jiffies(void);*/
 static void	create_file(char *name, int mode);
 static uint8_t	cmp_login(void);
 
 static int	misc_open(struct inode *inode, struct file *filp);
 static int	misc_release(struct inode *inode, struct file *filp);
 static ssize_t	misc_read(struct file *filp, char *buffer,
-			  size_t length, loff_t *offset);
+			size_t length, loff_t *offset);
 static ssize_t	misc_write(struct file *filp, const char *buffer,
-			   size_t length, loff_t *offset);
+			size_t length, loff_t *offset);
 
-int		filevalue;
 struct dentry	*dir_ptr, *fileret;
 
 const struct file_operations	f_ops = {
@@ -64,27 +62,38 @@ static ssize_t		misc_read(struct file *filp,
 			size_t length,
 			loff_t *offset)
 {
+	struct timeval	now;
+
 	if (*offset == 0) {
 		if (!strcmp(filp->f_path.dentry->d_name.name, "jiffies")) {
-			pr_info("lol");
-			/*strcat(jiffies_buf, "kernel timer");*/
-		} else {
-			if (copy_to_user(buffer, msg_rcv, strlen(msg_rcv)) != 0) {
+			do_gettimeofday(&now);
+			sprintf(jiffies_buf, "%lu\n", now.tv_sec);
+			if (copy_to_user(buffer, jiffies_buf, strlen(jiffies_buf)) != 0) {
 				pr_info("copy_to_user() failure");
 				return -1;
+			}
+			*offset = strlen(jiffies_buf);
+		} else if (!strcmp(filp->f_path.dentry->d_name.name, "id")) {
+			if (copy_to_user(buffer, id_buf, strlen(id_buf)) != 0) {
+				pr_info("copy_to_user() failure");
+				return -1;
+			}
+			*offset = strlen(id_buf);
+		} else if (!strcmp(filp->f_path.dentry->d_name.name, "foo")) {
+			if (copy_to_user(buffer, foo_buf, strlen(foo_buf)) != 0) {
+				pr_info("copy_to_user() failure");
+				return -1;
+			}
+			*offset = strlen(foo_buf);
 		}
-		*offset = strlen(msg_rcv);
-		return strlen(msg_rcv);
-		}
+		return (*offset);
 	}
-
-	pr_debug("buffer = %s\n", buffer);
 	return 0;
 }
 
 static uint8_t	cmp_login(void)
 {
-	if (strcmp(LOGIN, msg_rcv)) {
+	if (strcmp(LOGIN, id_buf)) {
 		pr_info("Invalid\n");
 		return -EINVAL;
 	}
@@ -98,27 +107,29 @@ static ssize_t	misc_write(struct file *filp,
 			loff_t *offset)
 {
 	unsigned long	retval = 0;
-	struct timeval	now;
 
-	memset(&msg_rcv, 0, BUFF_SIZE);
+	memset(&id_buf, 0, BUFF_SIZE);
 	if (length > BUFF_SIZE)
 		return -EINVAL;
-	retval = copy_from_user(msg_rcv, buffer, length);
-	if (retval) {
-		pr_err("%ld byte(s) can't be copied !\n", retval);
-		return retval;
-	}
-
 	if (!strcmp(filp->f_path.dentry->d_name.name, "id")) {
+		retval = copy_from_user(id_buf, buffer, length);
+		if (retval) {
+			pr_err("%ld byte(s) can't be copied !\n", retval);
+			return retval;
+		}
 		if (cmp_login() == 1)
 			return length;
 		else
 			return -EINVAL;
-	} else if (!strcmp(filp->f_path.dentry->d_name.name, "jiffies")) {
-		do_gettimeofday(&now);
-		pr_info("now = %lu\n", now.tv_sec);
+	} else if (!strcmp(filp->f_path.dentry->d_name.name, "foo")) {
+		retval = copy_from_user(foo_buf, buffer, length);
+		if (retval) {
+			pr_err("%ld byte(s) can't be copied !\n", retval);
+			return retval;
+		}
+		pr_info("buffer = %s\n", foo_buf);
+		return length;
 	}
-	pr_info("msg = %s\n", msg_rcv);
 	return (0);
 }
 
@@ -134,32 +145,13 @@ static int	create_dir(void)
 	return 0;
 }
 
-/*static void	create_file_id(void)*/
-/*{*/
-	/*fileret = debugfs_create_file("id", 0666, dir_ptr, NULL, &f_ops);*/
-	/*if (fileret == NULL)*/
-		/*pr_info("Create file \'id\' failure\n");*/
-	/*else*/
-		/*pr_info("Create file \'id\' Success\n");*/
-/*}*/
-
-/*static void	create_file_jiffies(void)*/
-/*{*/
-
-	/*fileret = debugfs_create_file("jiffies", 0444, dir_ptr, NULL, &f_ops);*/
-	/*if (fileret == NULL)*/
-		/*pr_info("Create file \'jiffies\' failure\n");*/
-	/*else*/
-		/*pr_info("Create file \'jiffies\' Success\n");*/
-/*}*/
-
 static void	create_file(char *name, int mode)
 {
 	fileret = debugfs_create_file(name, mode, dir_ptr, NULL, &f_ops);
 	if (fileret == NULL)
-		pr_info("Create file \'id\' failure\n");
+		pr_info("Create file \'%s\' failure\n", name);
 	else
-		pr_info("Create file \'id\' Success\n");
+		pr_info("Create file \'%s\' Success\n", name);
 }
 
 static int	__init begin(void)
@@ -167,8 +159,7 @@ static int	__init begin(void)
 	create_dir();
 	create_file("id", 0666);
 	create_file("jiffies", 0444);
-	/*create_file_id();*/
-	/*create_file_jiffies();*/
+	create_file("foo", 0644);
 	return 0;
 }
 
