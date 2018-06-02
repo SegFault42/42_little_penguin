@@ -32,6 +32,7 @@ static ssize_t	read_proc(struct file *filp, char *buf, size_t len, loff_t *offp)
 	struct dentry	*curdentry;
 	char		buff_entry[256] = {0};
 
+	memset(buffer, 0, BUFF_SIZE);
 	list_for_each_entry(curdentry, &current->fs->root.mnt->mnt_root->d_subdirs, d_child)
 	{
 		if (curdentry->d_flags & DCACHE_MOUNTED) {
